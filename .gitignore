@@ -1,0 +1,3 @@
+data/*
+!data/placeholder
+.ipynb_checkpoints
