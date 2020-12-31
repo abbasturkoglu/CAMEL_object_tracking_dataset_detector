@@ -21,10 +21,10 @@ from numpy import moveaxis
 from numpy import asarray
 from PIL import Image
 
-from dataset import PeopleDataset
-import transforms as T
-from engine import train_one_epoch, evaluate
-import utils
+from .dataset import PeopleDataset
+from . import transforms as T
+from .engine import train_one_epoch, evaluate
+from . import utils
 
 
 def get_transform(train):
@@ -142,7 +142,7 @@ def train(model):
         collate_fn=utils.collate_fn)
 
     data_loader_test = torch.utils.data.DataLoader(
-        dataset_test, batch_size=1, shuffle=False, num_workers=4,
+        dataset_test, batch_size=1, shuffle=True, num_workers=4,
         collate_fn=utils.collate_fn)
 
     # move model to the right device
@@ -195,13 +195,13 @@ def test_model_and_data_loader():
     plot_detections(images[0], detections)
 
 
-def make_detections_on_test_set(model, dataset_test, sequences_to_evaluate):
+def make_detections_on_test_set(model, dataset_test, sequences_to_evaluate, shuffle=True):
 
     for dir_name in sequences_to_evaluate:
 
         dataset_test.data_df = dataset_test.data_df.loc[dataset_test.data_df['dir_name']==dir_name]
         data_loader = torch.utils.data.DataLoader(
-            dataset_test, batch_size=4, shuffle=True, num_workers=4,
+            dataset_test, batch_size=4, shuffle=shuffle, num_workers=4,
             collate_fn=utils.collate_fn)
 
         all_frame_results_array = None
@@ -242,3 +242,58 @@ def make_detections_on_test_set(model, dataset_test, sequences_to_evaluate):
 
         os.makedirs(os.path.join('data', dir_name, 'det'), exist_ok=True)
         np.savetxt(os.path.join('data', dir_name, 'det', 'det.txt'), all_frame_results_array, delimiter=",")
+
+
+def make_detections_on_image_stream(path, model):
+
+    image_id = -1
+
+    vidObj = cv2.VideoCapture(path)
+
+    transform = get_transform(False)
+    model = model.eval()
+
+    all_frame_results_array = None
+
+    # checks whether frames were extracted
+    success = 1
+
+    while success:
+
+        success, image = vidObj.read()
+
+        image = Image.fromarray(image)
+
+        # img = Image.open('./data/sequence-1/img1/000608.jpg').convert("RGB")
+
+        image_tensor = transform(image, {})
+        image_tensor = image_tensor[0].unsqueeze(0).float()
+
+        with torch.no_grad():
+            predictions = model(image_tensor)
+
+        for frame in zip(predictions):
+
+            frame = frame[0]
+            image_id += 1
+            boxes = frame['boxes'].cpu().numpy()
+            labels = frame['labels'].cpu().numpy().reshape(-1,1)
+            scores = frame['scores'].cpu().numpy().reshape(-1,1)
+            image_id_col = np.array([image_id]*scores.shape[0]).reshape(-1,1)
+            x = np.array([-1]*scores.shape[0]).reshape(-1,1)
+            y = np.array([-1]*scores.shape[0]).reshape(-1,1)
+            z = np.array([-1]*scores.shape[0]).reshape(-1,1)
+
+            # Convert bbox coords to tlwh from tlbr
+            boxes[:,2] = boxes[:,2]-boxes[:,0]
+            boxes[:,3] = boxes[:,3]-boxes[:,1]
+
+            frame_results = np.hstack([image_id_col, labels, boxes, scores, x, y, z])
+
+            if all_frame_results_array is not None:
+                all_frame_results_array = np.vstack([all_frame_results_array, frame_results])
+            else:
+                all_frame_results_array = frame_results
+
+        np.savetxt(os.path.join('det.txt'), all_frame_results_array, delimiter=",")
+

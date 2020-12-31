@@ -11,12 +11,7 @@ from PIL import Image
 
 def create_data_df(data_dir):
 
-    directories = os.listdir(data_dir)
-
-    try:
-        directories.remove('.DS_Store')
-    except ValueError:
-        pass
+    directories = [name for name in os.listdir(data_dir) if name.startswith('sequence')]
 
     all_data_df = None
 
@@ -121,4 +116,4 @@ class PeopleDataset(object):
         train_df = data_df.loc[data_df['train']==True]
         test_df = data_df.loc[data_df['train']==False]
 
-        return PeopleDataset(self.transforms, train_df), PeopleDataset(self.transforms, test_df)
+        return PeopleDataset(self.transforms, train_df, data_root=self.data_root), PeopleDataset(self.transforms, test_df, data_root=self.data_root)
