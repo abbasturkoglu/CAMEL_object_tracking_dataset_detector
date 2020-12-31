@@ -14,3 +14,4 @@ RUN pip install -r requirements.txt
 RUN pip install pycocotools
 
 CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--allow-root"]
+#CMD ["python", "app.py"]
