@@ -3,3 +3,5 @@ data/*
 .ipynb_checkpoints
 .DS_Store
 __pycache__/
+*.mp4
+*.txt
