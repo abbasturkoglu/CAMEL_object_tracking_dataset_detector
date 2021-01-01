@@ -42,7 +42,7 @@ def main():
         #img = decode(msg.value)
         img = from_base64(msg.value)
         image = Image.fromarray(img)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(np.float32(image), cv2.COLOR_BGR2RGB)
 
         # img = Image.open('./data/sequence-1/img1/000608.jpg').convert("RGB")
 
