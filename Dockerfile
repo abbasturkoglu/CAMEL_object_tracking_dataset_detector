@@ -13,5 +13,7 @@ RUN apt-get install -y manpages-dev
 RUN pip install -r requirements.txt
 RUN pip install pycocotools
 
-CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--allow-root"]
+#CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--allow-root"]
 #CMD ["python", "app.py"]
+RUN chmod +x /home/app/entrypoint.sh
+CMD /home/app/entrypoint.sh
